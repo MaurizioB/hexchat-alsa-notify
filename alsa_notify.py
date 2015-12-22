@@ -22,13 +22,17 @@ events = {'Channel Msg Hilight': True,
 def help_message():
     message = ['\002\00304AlsaNotify\017\tUsage:',
             '/alsanotify <command> [option]:',
-            'config            Show configuration',
-            'list_cards        List available sound cards',
-            'set_card id       Set card id',
-            'test              Test sound',
-            'test_file file    Test "file" wave (must be a stereo wave file)',
-            'set_file file     Set "file" wave',
-            'help              Shows this help'
+            'config               Show configuration',
+            'list_cards           List available sound cards',
+            'set_card id          Set card id',
+            'test                 Test sound',
+            'test_file file       Test "file" wave (must be a stereo wave file)',
+            'set_file file        Set "file" wave',
+            'get_default          Download default sound file',
+            'list_events          List available events',
+            'set_event event      Enable "event" notifications',
+            'unset_event event    Disable "event" notifications',
+            'help                 Shows this help'
             ]
     return '\n'.join(message)
 
@@ -133,8 +137,8 @@ def settings(word, word_eol, userdata):
             if not len(word) >= 3:
                 aprint('Please enter a file path')
             else:
-                newfile = word_eol[2].strip('\'"')
-                if os.path.isfile(newfile):
+                newfile = os.path.join(addons_path, os.path.expanduser(word_eol[2].strip('\'"')))
+                if os.path.isfile(os.path.join(addons_path, newfile)):
                     aprint('Testing file: "{}"'.format(newfile))
                     try:
                         playme(newfile)
