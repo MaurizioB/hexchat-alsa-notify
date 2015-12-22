@@ -11,11 +11,12 @@ With this script you can use a specific alsa hardware card or, eventually, a
 plug:device if set in the .asoundrc file.
 
 ## Install
-Download alsa_notify.py and put it in the Hexchat addon directory (usually it
+This script **requires** [pyalsaaudio](http://larsimmisch.github.io/pyalsaaudio/).
+Download `alsa_notify.py` and put it in the Hexchat addon directory (usually it
 is `~/.config/hexchat/addons/`) or load it from Hexchat through Window/Plugins
 and Scripts window.
-Once the plugin is loaded it selects the first hardware device and tries to
-use a default file (`sine_alert.wav`).
+Once the plugin is loaded it selects the first available hardware device and
+tries to use a default file (`sine_alert.wav`).
 
 ## Usage
     /alsanotify <command> [option]
@@ -29,11 +30,13 @@ use a default file (`sine_alert.wav`).
 `set_file file`           |Set "file" wave*
 `get_default`             |Download default sound file
 `list_events`             |List available events
-`set_event event`         |Enable "event" notifications
-`unset_event event`       |Disable "event" notifications
+`set_event event`         |Enable "event" notifications**
+`unset_event event`       |Disable "event" notifications**
 `help`                    |Shows this help
 
 (*) `file` name can be an absolute or relative path ('`~`' is accepted).
+
+(**) `event` is case insensitive.
 
 
 The script automatically enables the 2 default events (more events might be

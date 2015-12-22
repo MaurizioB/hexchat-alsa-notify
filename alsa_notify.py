@@ -180,14 +180,20 @@ def settings(word, word_eol, userdata):
                 print '[{}] {}'.format('*' if active else ' ', event)
         elif word[1] == 'set_event':
             events = get_pluginpref('events')
-            event = word_eol[2]
+            event = word_eol[2].strip('\'"').title()
+            if not event in events.keys():
+                aprint('Please input a valid event between these:\n{}'.format('\n'.join(events.keys())))
+                return hexchat.EAT_ALL
             events[event] = True
             hexchat.hook_print(event, notify)
             set_pluginpref('events', events)
             aprint('Notifications set for "{}"'.format(event))
         elif word[1] == 'unset_event':
             events = get_pluginpref('events')
-            event = word_eol[2]
+            event = word_eol[2].strip('\'"').title()
+            if not event in events.keys():
+                aprint('Please input a valid event between these:\n{}'.format('\n'.join(events.keys())))
+                return hexchat.EAT_ALL
             events[event] = False
             hexchat.unhook(event)
             set_pluginpref('events', events)
