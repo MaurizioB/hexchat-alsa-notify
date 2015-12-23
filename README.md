@@ -26,13 +26,17 @@ tries to use a default file (`sine_alert.wav`).
 `list_cards`              |List available sound cards
 `set_card id`             |Set card id
 `test`                    |Test sound
-`test_file file`          |Test "file" wave (must be a stereo wave file)*
-`set_file file`           |Set "file" wave*
+`test_file *file*`        |Test "file" wave (must be a stereo wave file)*
+`set_file *file*`         |Set "file" wave*
+`load_file [test]`        |Show a file open dialog to choose a file; add "test"
+argument to just listen to the file, otherwise it will be set if successfully
+opened
 `get_default`             |Download default sound file
 `list_events`             |List available events
 `set_event event`         |Enable "event" notifications**
 `unset_event event`       |Disable "event" notifications**
-`help`                    |Shows this help
+`about`                   |Show informations about this script
+`help`                    |Show this help
 
 (*) `file` name can be an absolute or relative path ('`~`' is accepted).
 
