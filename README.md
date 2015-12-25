@@ -24,7 +24,7 @@ tries to use a default file (`sine_alert.wav`).
 
 ## Usage
     /alsanotify <command> [option]
-| `command` | action                       |
+| `command` | action                                                        |
 | --- | --- |
 `config`                  |Show configuration
 `list_cards`              |List available sound cards
@@ -32,7 +32,7 @@ tries to use a default file (`sine_alert.wav`).
 `test`                    |Test sound
 `test_file *file*`        |Test "file" wave (must be a stereo wave file)*
 `set_file *file*`         |Set "file" wave*
-`load_file [test]`        |Show a file open dialog to choose a file;<br>add "test" argument to just listen to the file,<br> otherwise it will be set if successfully opened
+`load_file [test]`        |Show a file open dialog to choose a file; add "test" argument to just listen to the file, otherwise it will be set if successfully opened
 `get_default`             |Download default sound file
 `list_events`             |List available events
 `set_event event`         |Enable "event" notifications**
