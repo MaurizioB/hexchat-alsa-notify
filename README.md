@@ -1,5 +1,5 @@
 # hexchat-alsa-notify
-A hexchat addon to play notifications directly from alsa
+A hexchat addon to play notifications directly from [Alsa](http://alsa-project.org)
 
 
 Hexchat uses its internal engine to play sound notifications (or libcanberra),
@@ -10,8 +10,12 @@ with pulseaudio.
 With this script you can use a specific alsa hardware card or, eventually, a
 plug:device if set in the .asoundrc file.
 
+## Requirements
+- A Linux system with working ALSA sound
+- Python scripting interface plugin for HexChat
+- [pyalsaaudio](http://larsimmisch.github.io/pyalsaaudio/).
+
 ## Install
-This script **requires** [pyalsaaudio](http://larsimmisch.github.io/pyalsaaudio/).
 Download `alsa_notify.py` and put it in the Hexchat addon directory (usually it
 is `~/.config/hexchat/addons/`) or load it from Hexchat through Window/Plugins
 and Scripts window.
@@ -20,7 +24,7 @@ tries to use a default file (`sine_alert.wav`).
 
 ## Usage
     /alsanotify <command> [option]
-| `command` | action |
+| `command` | action                       |
 | --- | --- |
 `config`                  |Show configuration
 `list_cards`              |List available sound cards
