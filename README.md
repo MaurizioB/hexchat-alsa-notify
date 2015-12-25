@@ -32,7 +32,7 @@ tries to use a default file (`sine_alert.wav`).
 `test`                    |Test sound
 `test_file *file*`        |Test "file" wave (must be a stereo wave file)*
 `set_file *file*`         |Set "file" wave*
-`load_file [test]`        |Show a file open dialog to choose a file; add "test" argument to just listen to the file, otherwise it will be set if successfully opened
+`load_file [test]`        |Show a file open dialog to choose a file;<br>add "test" argument to just listen to the file,<br> otherwise it will be set if successfully opened
 `get_default`             |Download default sound file
 `list_events`             |List available events
 `set_event event`         |Enable "event" notifications**
@@ -57,10 +57,10 @@ script to download it for you using the `get_default` command
 Right now I don't know how to really open _any_ audio file yet, so it's better
 to use a standard stereo Wave file at 44.1/48khz.
 
-Using **sox**
+Using **sox**:
 
     $ sox input.wav -r 48000 -c 2 output.wav
 
-Using **ffmpeg**
+Using **ffmpeg**:
 
     $ ffmpeg -i input.wav -ar 48000 -ac 2 output.wav
