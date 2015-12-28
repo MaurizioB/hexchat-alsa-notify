@@ -1,9 +1,9 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*
 
-__module_name__ = "Hexchat Alsa Notify"
-__module_version__ = "0.3"
-__module_description__ = "Custom alsa notifications"
+__module_name__ = "Alsa Notifications"
+__module_version__ = "0.5"
+__module_description__ = "Advanced Alsa notifications"
 __author__ = "MaurizioB"
 __website__ = "https://github.com/MaurizioB/hexchat-alsa-notify"
 __authorwebsite__ = "http://jidesk.net"
@@ -11,44 +11,58 @@ __authorwebsite__ = "http://jidesk.net"
 import hexchat
 import alsaaudio, wave
 import os.path
+from os import makedirs
+#from collections import OrderedDict
 
-sound_filename = 'sine_alerts.wav'
+sound_filename = default_sound = 'sine_alerts.wav'
+
 addons_path = os.path.join(hexchat.get_info('configdir'), 'addons')
-sound_file = os.path.join(addons_path, sound_filename)
 card = 0
+prefs_raw = 'alsa_notify'
 
 events = {'Channel Msg Hilight': True,
           'Channel Action Hilight': True,
-          }
+          'Private Action': True,
+          'Private Action to Dialog': True,
+          'Private Message': True,
+          'Private Message to Dialog': True
+}
+
+commands = [('config', 'Show configuration'),
+            ('audio', None),
+            ('list_cards', 'List available sound cards'),
+            ('set_card id', 'Set card id'),
+            ('test', 'Test sound'),
+            ('test_file <file>', 'Test "file" wave (must be a stereo wave file)'),
+            ('set_file <file>', 'Set "file" wave'),
+            ('load_file [test]', ('Show a file open dialog to choose a file; add '
+                                 '"test" argument to just listen to the file '
+                                 'otherwise it will be set if successfully opened')),
+            ('download_sound', 'Download default sound file'),
+            ('events', None),
+            ('list_events', 'List available events'),
+            ('set_event event', 'Enable "event" notifications'),
+            ('unset_event event', 'Disable "event" notifications'),
+            ('docs', None),
+            ('about', 'Show informations about this script'),
+            ('help', 'Show this help'),
+            ]
+
 
 def help_message():
     message = ['\002\00304AlsaNotify\017\tUsage:',
-            '/alsanotify <command> [option]:\n',
-            '\002config\017               Show configuration',
-            '\00310audio>\t\017',
-            '\002list_cards\017           List available sound cards',
-            '\002set_card id\017          Set card id',
-            '\002test\017                 Test sound',
-            '\002test_file <file>\017     Test "file" wave (must be a stereo wave file)',
-            '\002set_file <file>\017      Set "file" wave',
-            '\002load_file [test]\017     Show a file open dialog to choose a file; add "test" argument to just listen to the file, otherwise it will be set if successfully opened',
-            '\002get_default\017          Download default sound file',
-            '\00310events>\t\017',
-            '\002list_events\017          List available events',
-            '\002set_event event\017      Enable "event" notifications',
-            '\002unset_event event\017    Disable "event" notifications',
-            '\00310docs>\t\017',
-            '\002about\017                Show informations about this script',
-            '\002help\017                 Show this help',
-            '\n\nOnly "standard" wave files are accepted, no floating point; other formats (FLAC, ogg, mp3...) are not supported yet.'
-            ]
+            '/alsanotify <command> [option]:\n',]
+    maxlen = len(max([i[0] for i in commands], key=len))+4
+    for i in commands:
+        if not i[1]:
+            message.append('\00310{}>\t\017'.format(i[0]))
+        else:
+            message.append('\002{}\017{}{}'.format(i[0], ' '*(maxlen-len(i[0])), i[1]))
+
+    message.append('\n\nOnly "standard" wave files are accepted, no floating point; other formats (FLAC, ogg, mp3...) are not supported yet.')
     return '\n'.join(message)
 
 ### preference wrapper
-prefs_raw = 'alsa_notify'
-if not hexchat.get_pluginpref(prefs_raw):
-    hexchat.set_pluginpref(prefs_raw, str('{}'))
-
 def get_pluginpref(name):
     prefs = eval(hexchat.get_pluginpref(prefs_raw))
     return prefs.get(name, None)
@@ -70,23 +84,67 @@ def list_pluginpref():
     print hexchat.get_pluginpref(prefs_raw)
 ### done
 
-### config loading/setting
-if not get_pluginpref('card'):
-    set_pluginpref('card', card)
-
-if not get_pluginpref('file'):
-    set_pluginpref('file', sound_file)
-
-if not get_pluginpref('events'):
-    set_pluginpref('events', events)
-### done
-
-
 def aprint(*message):
     message = ' '.join(message)
     #print '\002\00304[AlsaNotify]\017 {}'.format(message)
     #hexchat.emit_print('Notice', 'AlsaNotify', message)
     print '\002\00304AlsaNotify\017\t', message
+
+### config loading/setting
+if not hexchat.get_pluginpref(prefs_raw):
+    firstrun = True
+    hexchat.set_pluginpref(prefs_raw, str('{}'))
+else:
+    firstrun = False
+    version = get_pluginpref('version')
+    if not version or version < __module_version__:
+        set_pluginpref('version', __module_version__)
+
+        aprint('updating preferences')
+        if not get_pluginpref('events'):
+            set_pluginpref('events', events)
+        else:
+            imported = get_pluginpref('events')
+            print imported
+            for event, active in events.items():
+                events[event] = imported.get(event, active)
+            set_pluginpref('events', events)
+            print events
+
+        print '...done!'
+    elif version < __module_version__:
+        pass
+
+if not get_pluginpref('card'):
+    set_pluginpref('card', card)
+
+if not get_pluginpref('events'):
+    set_pluginpref('events', events)
+
+if get_pluginpref('enabled') == None:
+    set_pluginpref('enabled', True)
+
+if get_pluginpref('sounds_path') == None:
+    if os.path.isdir(os.path.join(addons_path, 'alsa_notify')):
+        sounds_path = os.path.join(addons_path, 'alsa_notify')
+    else:
+        sounds_path = os.path.join(hexchat.get_info('configdir'), 'sounds')
+        if not os.path.isdir(sounds_path):
+            try:
+                makedirs(sounds_path)
+            except OSError:
+                aprint('Error creating sounds directory "{}", check write permissions'.format(sounds_path))
+
+else:
+    sounds_path = get_pluginpref('sounds_path')
+
+if not get_pluginpref('file'):
+    set_pluginpref('file', sound_file)
+else:
+    sound_file = get_pluginpref('file')
+
+### done
+
 
 def playme(sound_file=None, *args):
     card = get_pluginpref('card')
@@ -127,7 +185,7 @@ def printcards():
             print '{}: {}'.format(i, card)
 
 
-def settings(word, word_eol, user_data):
+def manager(word, word_eol, user_data):
     card = get_pluginpref('card')
     sound_file = get_pluginpref('file')
     if len(word) < 2:
@@ -177,8 +235,8 @@ def settings(word, word_eol, user_data):
         elif word[1] == 'test':
             aprint('Playing test file: "{}"'.format(sound_file))
             playme()
-        elif word[1] == 'get_default':
-            if os.path.isfile(os.path.join(addons_path, sound_filename)):
+        elif word[1] == 'download_sound':
+            if os.path.isfile(os.path.join(sounds_path, sound_filename)):
                 aprint('Default "{}" already exists'.format(sound_filename))
             aprint('Trying to download the default file')
             import urllib2, socket
@@ -192,21 +250,30 @@ def settings(word, word_eol, user_data):
                 return hexchat.EAT_ALL
             data = dl.read()
             try:
-                with open(os.path.join(addons_path, sound_filename), 'wb') as wavefile:
+                with open(os.path.join(sounds_path, sound_filename), 'wb') as wavefile:
                     wavefile.write(data)
             except:
                 aprint('Error saving the default file! Check permissions or drive space!')
                 return hexchat.EAT_ALL
             aprint('Default file "{}" successfully downloaded!'.format(sound_filename))
+            hexchat.command('MENU DEL "Settings/Notifications/Settings/Download sounds"')
 
+        elif word[1] == 'enable':
+            set_pluginpref('enabled', True)
+            aprint('Notifications enabled')
+            menu_events(True)
+        elif word[1] == 'disable':
+            set_pluginpref('enabled', False)
+            aprint('Notifications disabled')
+            menu_events(False)
         elif word[1] == 'list_events':
             aprint('Available events ("*" marks an enabled event):')
             for event, active in get_pluginpref('events').iteritems():
                 print '[{}] {}'.format('*' if active else ' ', event)
         elif word[1] == 'set_event':
             events = get_pluginpref('events')
-            event = word_eol[2].strip('\'"').title()
-            if not event in events.keys():
+            event = word_eol[2].strip('\'"').lower()
+            if not event in [e.lower() for e in events.keys()]:
                 aprint('Please input a valid event between these:\n{}'.format('\n'.join(events.keys())))
                 return hexchat.EAT_ALL
             events[event] = True
@@ -215,8 +282,8 @@ def settings(word, word_eol, user_data):
             aprint('Notifications set for "{}"'.format(event))
         elif word[1] == 'unset_event':
             events = get_pluginpref('events')
-            event = word_eol[2].strip('\'"').title()
-            if not event in events.keys():
+            event = word_eol[2].strip('\'"').lower()
+            if not event in [e.lower() for e in events.keys()]:
                 aprint('Please input a valid event between these:\n{}'.format('\n'.join(events.keys())))
                 return hexchat.EAT_ALL
             events[event] = False
@@ -225,7 +292,7 @@ def settings(word, word_eol, user_data):
             aprint('Notifications unset for "{}"'.format(event))
         elif word[1] == 'load_file':
             hexchat.hook_command('alsanotifyloadfile', loadfile)
-            hexchat.command('getfile "alsanotifyloadfile{}" "Load .wav file" ./'.format(' testaudiofile' if (len(word) == 3 and word[2] == 'test') else ''))
+            hexchat.command('getfile "alsanotifyloadfile{}" "Load .wav file" {}'.format(' testaudiofile' if (len(word) == 3 and word[2] == 'test') else '', sounds_path))
             return hexchat.EAT_ALL
 
         elif word[1] == 'help':
@@ -258,6 +325,8 @@ def loadfile(word, word_eol, user_data):
     return hexchat.EAT_ALL
 
 def notify(word, word_eol, user_data):
+    if not get_pluginpref('enabled'):
+        return hexchat.EAT_NONE
     current = hexchat.find_context()
     origin = hexchat.get_context()
     if current == origin and hexchat.get_info('win_status') == 'active':
@@ -267,21 +336,85 @@ def notify(word, word_eol, user_data):
         return hexchat.EAT_NONE
     playme()
 
-#hexchat.hook_print("Channel Msg Hilight", notify)
-#hexchat.hook_print('Channel Action Hilight', notify)
+def make_menu():
+    path = 'Settings/Notifications'
+    hexchat.command('MENU -i ADD '+path)
+    hexchat.command('MENU -t{} ADD "{}/Enable notifications" "alsanotify enable" "alsanotify disable"'.format('1' if get_pluginpref('enabled') else '0', path ))
+    hexchat.command('MENU ADD '+path+'/-')
 
-for event, active in get_pluginpref('events').iteritems():
+    hexchat.command('MENU ADD "'+path+'/Settings"')
+    confpath = path+'/Settings'
+
+    #add audio cards
+    hexchat.command('MENU ADD "'+confpath+'/Sound card"')
+    active = alsaaudio.cards()[int(get_pluginpref('card'))]
+    for i, card in enumerate(alsaaudio.cards()):
+        hexchat.command('MENU -r{a},{g} ADD "{p}/Sound card/{c}" "alsanotify set_card {i}"'.format(a='1' if active==card else '0', g=alsaaudio.cards()[0], p=confpath, c=card, i=i))
+    hexchat.command('MENU ADD '+confpath+'/-')
+
+    #load custom file
+    hexchat.command('MENU ADD "'+confpath+'/Load file..." "alsanotify load_file"')
+    
+    #download default file
+    if not os.path.isfile(os.path.join(sounds_path, default_sound)):
+        hexchat.command('MENU ADD "'+confpath+'/Download sounds" "alsanotify download_sound"')
+
+    hexchat.command('MENU ADD '+path+'/-')
+    #add event list
+    if get_pluginpref('enabled'):
+        s = '1'
+    else: s = '0'
+    for event, active in get_pluginpref('events').items():
+        hexchat.command('MENU -e{s} -t{a} ADD "{p}/{e}" "alsanotify set_event {e}" "alsanotify unset_event {e}"'.format(s=s, a='1' if active else '0', p=path, e=event))
+
+def menu_events(active):
+    path = 'Settings/Notifications'
+    if active:
+        s = '1'
+    else: s = '0'
+    for event, active in get_pluginpref('events').items():
+        hexchat.command('MENU -e{s} -t{a} ADD "{p}/{e}" "alsanotify set_event {e}" "alsanotify unset_event {e}"'.format(s=s, a='1' if active else '0', p=path, e=event))
+
+def unload(userdata):
+    aprint('unloading {} addon'.format(__module_name__))
+    hexchat.command('MENU DEL Settings/Notifications')
+
+
+#functions defined, let's go!
+for event, active in get_pluginpref('events').items():
     if active:
         hexchat.hook_print(event, notify)
 
+make_menu()
+hexchat.hook_command('alsanotify', manager, help=help_message())
+hexchat.hook_unload(unload)
 
-hexchat.hook_command('alsanotify', settings, help=help_message())
-
-aprint('{} (v. {}) successfully loaded with these settings:'.format(__module_name__, __module_version__))
+if firstrun:
+    aprint('{} (v. {}) successfully loaded!'.format(__module_name__, __module_version__))
+    print 'This is the first time it is installed, you may want to configure it. These are the default settings:'
+else:
+    aprint('{} (v. {}) successfully loaded with these settings:'.format(__module_name__, __module_version__))
 print 'Sound card:', alsaaudio.cards()[get_pluginpref('card')]
 if os.path.isfile(sound_file):
     print 'Audio file:', sound_file
 else:
     print '\002\00304*\017\tAudio file "{}" not found, check configuration!'.format(get_pluginpref('file'))
-    print 'Use "/alsanotify get_default" to download the default file or "/alsanotify set_file" to set a custom file'
+    print 'Use "/alsanotify download_sound" to download the default file or "/alsanotify set_file" to set a custom file'
+if get_pluginpref('enabled'):
+    enabled = []
+    disabled = []
+    for event, active in get_pluginpref('events').items():
+        if active:
+            enabled.append(event)
+        else:
+            disabled.append(event)
+    if len(enabled) > 0:
+        print 'Notifications are enabled for the following events:'
+        print '*\t'+', '.join(enabled)
+    if len(disabled) > 0:
+        print 'Notifications are disabled for the following events:'
+        print '*\t'+', '.join(disabled)
+
+else:
+    print 'Notifications are disabled'
 
